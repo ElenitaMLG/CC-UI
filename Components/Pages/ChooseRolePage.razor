@@ -1,0 +1,15 @@
+﻿@page "/"
+
+@layout AuthLayout
+<head>
+    <title>Choose Role</title>
+</head>
+<link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css"/>
+<div class="text-center mt-5 centered-menu">
+    <h1 class="landingTitle">Welcome to Healthcare Manager</h1>
+    <p class="landingSubtitle">Please select your role:</p>
+    <div class="button-container">
+        <NavLink class="btn btn-primary m-2" href="/login/doctor">I'm a Doctor</NavLink>
+        <NavLink class="btn btn-secondary m-2" href="/login/patient">I'm a Patient</NavLink>
+    </div>
+</div>

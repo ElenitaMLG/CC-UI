@@ -1,0 +1,155 @@
+﻿@using System.Text.Json
+@using HealthcareManagerUiWebAssem.Models
+@using HealthcareManagerUiWebAssem.Services.Profile
+@using HealthcareManagerUiWebAssem.Services.Appointment
+@using HealthcareManagerUiWebAssem.Services.User
+@inject UserService UserService
+@inject IProfileService ProfileService
+@inject IAppointmentService AppointmentService
+@inject IJSRuntime JS
+
+<div class="container mt-3">
+    <h2 class="landingTitle">Doctor Menu</h2>
+    <p class="landingSubtitle">Here you can manage appointments, review your patients' medical history and chat with your patients.</p>
+    <div id="accordion">
+        <div class="card">
+            <div class="card-header">
+                <a class="btn" data-bs-toggle="collapse" href="#collapseOne">
+                    Appointments
+                </a>
+            </div>
+            <div id="collapseOne" class="collapse show" data-bs-parent="#accordion">
+                <div class="card-body">
+                    <table class="table">
+
+                        <thead>
+
+                        <tr>
+
+                            <th>Patient Name</th>
+
+                            <th>Appointment Time</th>
+
+                            <th>Delete</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                        @foreach (var appointment in appointments)
+
+                        {
+
+                        @foreach (var date in appointment.AppointmentsList)
+
+                        {
+
+                        <tr>
+
+                            <td>@GetPatientName(new Guid(appointment.PatientId))</td>
+
+                            <td>@date.ToString("yyyy-MM-dd HH:mm")</td>
+
+                            <td><button class="btn btn-danger" @onclick="(() => DeleteAppointment(appointment))">Delete</button></td>
+
+                        </tr>
+
+                        }
+
+                        }
+
+                        </tbody>
+
+                    </table>
+                    <AppointmentTableComponent appointments="appointments" OnAppointmentDeleted="HandleAppointmentDeleted" />
+                </div>
+            </div>
+        </div>
+        <!-- ... other patient-specific cards ... -->
+    </div>
+</div>
+
+@code {
+    private List<Patient> patients;
+    private string selectedDoctorId;
+    private DateTime? selectedDate;
+    private List<Appointment> appointments;
+    private List<byte[]> medicalHistoryFiles;
+    [Parameter] public string Role { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializePatients();
+        await LoadAppointments();
+    }
+    
+    private async Task LoadAppointments()
+    {
+        var response = await AppointmentService.GetAppointmentsByDoctor(UserService.UserId);
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        if (response.StatusCode == HttpStatusCodes.OK)
+        {
+            appointments = JsonSerializer.Deserialize<List<Appointment>>(response.Data, jsonOptions) ?? new List<Appointment>();
+        }
+        else
+        {
+            appointments = new List<Appointment>();
+        }
+    }
+
+    private async Task InitializePatients()
+    {
+        var response = await ProfileService.GetPatients();
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        if (response.StatusCode == HttpStatusCodes.OK)
+        {
+            patients = JsonSerializer.Deserialize<List<Patient>>(response.Data, jsonOptions);
+        }
+        else
+        {
+            // Handle error
+        }
+    }
+
+    
+
+    private void AddMedicalHistoryFile()
+
+    {
+
+        // Logic for adding a new appointment
+
+    }
+
+    private async Task DeleteAppointment(Appointment appointmentToDelete)
+
+    {
+
+        var appointmentModelToDelete = new AppointmentManagementModel
+
+        {
+
+            PatientId = new Guid(appointmentToDelete.PatientId),
+
+            DoctorId = new Guid(appointmentToDelete.DoctorId),
+
+            Appointment = appointmentToDelete.AppointmentsList.FirstOrDefault()
+
+        };
+
+        await AppointmentService.DeleteAppointment(appointmentModelToDelete);
+
+        appointments.Remove(appointmentToDelete);
+
+    }
+
+
+
+    private string GetPatientName(Guid patientId)
+    {
+        var patient = patients.Select(d => d).FirstOrDefault(d => d.Id == patientId);
+        return patient?.Name ?? string.Empty;
+    }
+}

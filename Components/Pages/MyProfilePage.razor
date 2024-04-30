@@ -1,0 +1,123 @@
+﻿@page "/my-profile/{Role}"
+@using HealthcareManagerUiWebAssem.Models
+@using HealthcareManagerUiWebAssem.Services.Authentication
+@using HealthcareManagerUiWebAssem.Services.Profile
+@using HealthcareManagerUiWebAssem.Services.User
+@using HealthcareManagerUiWebAssem.Services.UserSessionInformation
+
+@layout AuthLayout
+@inject IUserSessionInformation UserSessionInformation;
+@inject IAuthenticationService AuthenticationService;
+@inject IProfileService ProfileService
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<head>
+    <title>My Profile</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<link rel="stylesheet" href="/LoginPage.css"/>
+<link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css"/>
+
+<h3>My Profile</h3>
+@if (profile != null)
+{
+    <EditForm Model="profile" OnValidSubmit="@HandleUpdateProfile" FormName="UpdateProfileForm" class="login-form container mt-5">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label for="name">Name:</label>
+                    <InputText id="name" class="form-control" @bind-Value="@profile!.Name"></InputText>
+                </div>
+
+                @if (Role.Equals("doctor", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="form-group mb-3">
+                        <label for="description">Description:</label>
+                        <InputText id="description" class="form-control" @bind-Value="@profile!.Description"></InputText>
+                    </div>
+                }
+
+                <div class="form-group mb-3">
+                    <label for="email">Email:</label>
+                    <InputText id="email" class="form-control" @bind-Value="@profile!.Email"></InputText>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="password">Password:</label>
+                    <InputText id="password" class="form-control" type="password" @bind-Value="@profile!.Password"></InputText>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button" class="btn btn-danger" @onclick="@HandleDeleteProfile">Delete</button>
+            </div>
+        </div>
+    </EditForm>
+
+
+    <AlertMessage ErrorMessage="@errorMessage"/>
+}
+
+@code {
+
+    [SupplyParameterFromForm] public UserUpdateProfileModel? profile { get; set; }
+
+    [Parameter] public string Role { get; set; }
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tokenDto = new TokenRefreshModel(await UserSessionInformation.GetTokenAsync());
+        var refreshResult = await AuthenticationService.RefreshToken(tokenDto);
+        if (refreshResult.StatusCode < HttpStatusCodes.BadRequest)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+        profile ??= await UserService.InitializeProfile(Role, ProfileService);
+        var userId = await UserSessionInformation.GetIdAsync();
+    }
+
+    private async Task HandleUpdateProfile()
+    {
+        profile.Id = UserService.UserId;
+        var response = Role switch
+        {
+            "doctor" => await ProfileService.UpdateDoctorProfile(profile),
+            "patient" => await ProfileService.UpdatePatientProfile(profile),
+            _ => null
+        };
+
+        if (response.StatusCode >= 200 && response.StatusCode <= 299)
+        {
+            NavigationManager.NavigateTo($"/my-profile/{Role}");
+        }
+        else
+        {
+            errorMessage = response?.Message ?? "An error occurred.";
+        }
+    }
+
+    private async Task HandleDeleteProfile()
+    {
+        var response = Role switch
+        {
+            "doctor" => await ProfileService.DeleteDoctorProfile(UserService.UserId),
+            "patient" => await ProfileService.DeletePatientProfile(UserService.UserId),
+            _ => null
+        };
+
+        if (response.StatusCode >= 200 && response.StatusCode <= 299)
+        {
+            NavigationManager.NavigateTo($"/login/{Role}");
+        }
+        else
+        {
+            errorMessage = response?.Message ?? "An error occurred.";
+        }
+    }
+
+}

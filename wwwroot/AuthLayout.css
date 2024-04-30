@@ -1,0 +1,75 @@
+﻿body, html {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevents scrolling caused by the absolute positioning */
+}
+
+body {
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    font-style: normal;
+    position: relative;
+    z-index: 0; /* Ensures the background is under the content */
+    overflow: scroll !important;
+}
+
+.background {
+    position: fixed;
+    top: -5%;
+    left: -5%;
+    width: 110%;
+    height: 110%;
+    background-image: url(background_image.jpg);
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: brightness(50%) blur(5px);
+    z-index: -1; /* Keeps it below the content */
+}
+
+.container {
+    z-index: 1;
+}
+
+/* New styles for title and subtitle */
+.landingTitle {
+    color: #ffffff;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+    font-size: 3.5rem;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: inline-block; /* Wrap the background to the text */
+    margin-top: 2rem; /* Give some space from the top */
+}
+
+.landingSubtitle {
+    color: #dcdcdc;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+    font-size: 2rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    display: block; /* Wrap the background to the text */
+    margin-bottom: 2rem; /* Give some space before the buttons */
+}
+
+.centered-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: row; /* This will align the buttons side by side */
+    justify-content: center; /* Center the buttons within the container */
+}
+
+.modal-backdrop.show {
+    display: none !important;
+}

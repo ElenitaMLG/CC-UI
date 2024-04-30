@@ -1,0 +1,83 @@
+﻿@page "/register/{role}"
+@using HealthcareManagerUiWebAssem.Models
+@using HealthcareManagerUiWebAssem.Services.Authentication
+
+@layout AuthLayout
+
+@inject IAuthenticationService AuthenticationService
+@inject NavigationManager NavigationManager
+
+<head>
+    <title>Register</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<link rel="stylesheet" href="/LoginPage.css"/>
+<link rel="stylesheet" href="/bootstrap/dist/css/bootstrap.min.css"/>
+
+<EditForm Model="userRegisterModel" OnValidSubmit="@HandleRegister" FormName="RegisterForm" class="login-form container mt-5">
+    <DataAnnotationsValidator/>
+    <ValidationSummary/>
+
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <h3 class="card-title text-center mb-3">Register</h3>
+            <div class="form-group mb-3">
+                <InputText id="name" class="form-control" placeholder="Name" @bind-Value="userRegisterModel!.Name"></InputText>
+            </div>
+            @if (Role.Equals("doctor", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="form-group mb-3">
+                    <InputText id="description" class="form-control" placeholder="Description" @bind-Value="userRegisterModel!.Description"></InputText>
+                </div>
+            }
+            <div class="form-group mb-3">
+                <InputText id="email" class="form-control" placeholder="Email" @bind-Value="userRegisterModel!.Email"></InputText>
+            </div>
+            <div class="form-group mb-3">
+                <InputText id="password" class="form-control" type="password" placeholder="Password" @bind-Value="userRegisterModel!.Password"></InputText>
+            </div>
+            <div class="button-container">
+                <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+<AlertMessage ErrorMessage="@errorMessage"/>
+
+@code {
+    [SupplyParameterFromForm] public UserRegisterModel? userRegisterModel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        userRegisterModel ??= new UserRegisterModel();
+    }
+
+    [Parameter] public string Role { get; set; }
+    private string errorMessage { get; set; }
+
+    private void ClearErrorMessage()
+    {
+        errorMessage = string.Empty;
+    }
+
+    private async Task HandleRegister()
+    {
+        var response = Role switch
+        {
+            "doctor" => await AuthenticationService.RegisterDoctor(userRegisterModel),
+            "patient" => await AuthenticationService.RegisterPatient(userRegisterModel),
+            _ => null
+        };
+
+        if (response.StatusCode >= 200 && response.StatusCode <= 399)
+        {
+            NavigationManager.NavigateTo($"/login/{Role}");
+        }
+        else
+        {
+            errorMessage = response.Message;
+        }
+    }
+
+}
