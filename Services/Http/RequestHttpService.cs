@@ -1,4 +1,5 @@
-﻿using System.Text;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using HealthcareManagerUiWebAssem.Models;
 using HealthcareManagerUiWebAssem.Services.UserSessionInformation;
@@ -26,7 +27,7 @@ public class RequestHttpService : IRequestHttpService
     {
         headers ??= new Dictionary<string, string>();
         var request = new HttpRequestMessage(HttpMethod.Get, $"{_apiEndpoint}{uri}/{id}");
-        AddHeaders(request, headers);
+        await AddHeaders(request, headers);
 
         var response = await _httpClient.SendAsync(request);
         Thread.Sleep(1000);
@@ -37,10 +38,8 @@ public class RequestHttpService : IRequestHttpService
     {
         headers ??= new Dictionary<string, string>();
         var request = new HttpRequestMessage(HttpMethod.Get, $"{_apiEndpoint}{uri}");
-        AddHeaders(request, headers);
-        var authHeader = request.Headers.GetValues("Authorization");
-        Console.WriteLine(authHeader);
-
+        await AddHeaders(request, headers);
+        
         var response = await _httpClient.SendAsync(request);
         Thread.Sleep(1000);
         return await HandleResponse(response, uri);
@@ -51,7 +50,7 @@ public class RequestHttpService : IRequestHttpService
     {
         headers ??= new Dictionary<string, string>();
         var request = new HttpRequestMessage(HttpMethod.Post, $"{_apiEndpoint}{uri}"); // Prepend _apiEndpoint
-        AddHeaders(request, headers);
+        await AddHeaders(request, headers);
         request.Content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
 
         var response = await _httpClient.SendAsync(request);
@@ -63,7 +62,7 @@ public class RequestHttpService : IRequestHttpService
     {
         headers ??= new Dictionary<string, string>();
         var request = new HttpRequestMessage(HttpMethod.Put, $"{_apiEndpoint}{uri}");
-        AddHeaders(request, headers);
+        await AddHeaders(request, headers);
         request.Content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
 
         var response = await _httpClient.SendAsync(request);
@@ -75,7 +74,7 @@ public class RequestHttpService : IRequestHttpService
     {
         headers ??= new Dictionary<string, string>();
         var request = new HttpRequestMessage(HttpMethod.Delete, $"{_apiEndpoint}{uri}/{id}");
-        AddHeaders(request, headers);
+        await AddHeaders(request, headers);
 
         var response = await _httpClient.SendAsync(request);
         Thread.Sleep(1000);
@@ -85,8 +84,8 @@ public class RequestHttpService : IRequestHttpService
     public async Task<BaseResponse> DeleteByFilterAsync(string uri, object data, IDictionary<string, string>? headers = null)
     {
         headers ??= new Dictionary<string, string>();
-        var request = new HttpRequestMessage(HttpMethod.Delete, $"{_apiEndpoint}{uri}");
-        AddHeaders(request, headers);
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"{_apiEndpoint}{uri}"); 
+        await AddHeaders(request, headers);
         request.Content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
 
         var response = await _httpClient.SendAsync(request);
@@ -94,13 +93,26 @@ public class RequestHttpService : IRequestHttpService
         return await HandleResponse(response, uri);
     }
 
-    private async void AddHeaders(HttpRequestMessage request, IDictionary<string, string>? headers)
+    private async Task AddHeaders(HttpRequestMessage request, IDictionary<string, string>? headers)
     {
-        request.Headers.Add("ApiKey", _apiKey);
-        request.Headers.Add("Authorization", "Bearer " + await _userSessionInformation.GetTokenAsync());
+        if (!request.Headers.Contains("ApiKey"))
+        {
+            request.Headers.Add("ApiKey", _apiKey);
+        }
 
-        if (headers == null) return;
-        foreach (var header in headers) request.Headers.Add(header.Key, header.Value);
+        var token = await _userSessionInformation.GetTokenAsync();
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        if (headers != null)
+        {
+            foreach (var header in headers)
+            {
+                if (!request.Headers.Contains(header.Key))
+                {
+                    request.Headers.Add(header.Key, header.Value);
+                }
+            }
+        }
     }
 
     private async Task<BaseResponse> HandleResponse(HttpResponseMessage? response, string uri)
