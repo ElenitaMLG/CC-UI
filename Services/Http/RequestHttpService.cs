@@ -96,6 +96,7 @@ public class RequestHttpService : IRequestHttpService
     {
         request.Headers.Add("ApiKey", _apiKey);
         request.Headers.Add("Authorization", "Bearer " + await _userSessionInformation.GetTokenAsync());
+        Console.WriteLine(request.Headers.GetValues("Authorization"));
 
         if (headers == null) return;
         foreach (var header in headers) request.Headers.Add(header.Key, header.Value);
